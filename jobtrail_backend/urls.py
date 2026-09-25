@@ -16,9 +16,25 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.http import JsonResponse
+
+def root_view(request):
+    return JsonResponse({
+        "status": "online",
+        "message": "Welcome to JobTrail REST API Backend",
+        "endpoints": {
+            "admin": "/admin/",
+            "register": "/api/register/",
+            "login": "/api/login/",
+            "applications": "/api/applications/",
+            "stats": "/api/stats/",
+        }
+    })
 
 urlpatterns = [
+    path('', root_view, name='root'),
     path('admin/', admin.site.urls),
     path('api/', include('applications.urls')),
 ]
+
 
