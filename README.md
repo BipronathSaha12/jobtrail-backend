@@ -5,7 +5,7 @@
 ---
 
 ## 🔗 Related Repositories
-- **Frontend Repository**: [JobTrail Frontend (React + Vite)](https://github.com/YOUR_GITHUB_USERNAME/jobtrail-frontend)
+- **Frontend Repository**: [JobTrail Frontend (React + Vite)](https://github.com/BipronathSaha12/jobtrail-frontend)
 
 ---
 
