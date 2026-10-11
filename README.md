@@ -8,7 +8,7 @@
 
 | Component | Repository | Live Deployment URL |
 | :--- | :--- | :--- |
-| **Frontend (React + Vite)** | [jobtrail-frontend](https://github.com/BipronathSaha12/jobtrail-frontend) | [Live Frontend on Vercel](https://jobtrail-frontend.vercel.app) *(or your deployed Vercel domain)* |
+| **Frontend (React + Vite)** | [jobtrail-frontend](https://github.com/BipronathSaha12/jobtrail-frontend) | [Live Frontend on Vercel](https://jobtrail-frontend-one.vercel.app/) |
 | **Backend (Django REST)** | [jobtrail-backend](https://github.com/BipronathSaha12/jobtrail-backend) | [https://jobtrail-backend-3.onrender.com](https://jobtrail-backend-3.onrender.com) |
 | **API Root** | — | [https://jobtrail-backend-3.onrender.com/api/](https://jobtrail-backend-3.onrender.com/api/) |
 | **Django Admin Panel** | — | [https://jobtrail-backend-3.onrender.com/admin/](https://jobtrail-backend-3.onrender.com/admin/) |
