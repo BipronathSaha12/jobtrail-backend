@@ -5,88 +5,131 @@ from datetime import date, timedelta
 import random
 
 class Command(BaseCommand):
-    help = "Seeds demo users and applications for testing"
+    help = "Seeds demo admin superusers and client-side demo users with rich applications"
 
     def handle(self, *args, **kwargs):
-        self.stdout.write("Seeding demo data...")
+        self.stdout.write("Seeding demo admin and client accounts...")
 
-        # Create Admin superuser for Django Admin portal
+        # 1. Create/update primary Admin superuser for Django Admin Panel (/admin/)
         admin_user, _ = User.objects.get_or_create(
+            username="admin",
+            defaults={"email": "admin@jobtrail.com", "is_staff": True, "is_superuser": True}
+        )
+        admin_user.set_password("admin123")
+        admin_user.email = "admin@jobtrail.com"
+        admin_user.is_staff = True
+        admin_user.is_superuser = True
+        admin_user.is_active = True
+        admin_user.save()
+        self.stdout.write(self.style.SUCCESS("Demo Admin superuser created/ready: admin / admin123"))
+
+        # Also ensure 'Admin' alias works
+        admin_alias, _ = User.objects.get_or_create(
             username="Admin",
             defaults={"email": "admin@example.com", "is_staff": True, "is_superuser": True}
         )
-        admin_user.set_password("admin")
-        admin_user.is_staff = True
-        admin_user.is_superuser = True
-        admin_user.save()
-        self.stdout.write("Created/updated Admin superuser: Admin / admin")
+        admin_alias.set_password("admin123")
+        admin_alias.is_staff = True
+        admin_alias.is_superuser = True
+        admin_alias.is_active = True
+        admin_alias.save()
 
-        # Create demo user 1
-        user1, created1 = User.objects.get_or_create(
+        # 2. Create/update primary client-side demo user 'demo' for Web UI (/login)
+        demo_user, _ = User.objects.get_or_create(
+            username="demo",
+            defaults={"email": "demo@jobtrail.com"}
+        )
+        demo_user.set_password("demo123")
+        demo_user.email = "demo@jobtrail.com"
+        demo_user.is_active = True
+        demo_user.save()
+        self.stdout.write(self.style.SUCCESS("Demo Client user created/ready: demo / demo123"))
+
+        # 3. Create/update secondary demo user 'demouser'
+        demo_user2, _ = User.objects.get_or_create(
             username="demouser",
-            defaults={"email": "demo@example.com"}
+            defaults={"email": "demouser@jobtrail.com"}
         )
+        demo_user2.set_password("password123")
+        demo_user2.email = "demouser@jobtrail.com"
+        demo_user2.is_active = True
+        demo_user2.save()
 
-        if created1:
-            user1.set_password("password123")
-            user1.save()
-            self.stdout.write(f"Created demo user: demouser / password123")
-        else:
-            self.stdout.write("Demo user demouser already exists.")
-
-        # Create demo user 2 for isolation testing
-        user2, created2 = User.objects.get_or_create(
+        # 4. Create user for owner isolation testing
+        isolation_user, _ = User.objects.get_or_create(
             username="testuser2",
-            defaults={"email": "user2@example.com"}
+            defaults={"email": "user2@jobtrail.com"}
         )
-        if created2:
-            user2.set_password("password123")
-            user2.save()
-            self.stdout.write(f"Created second user: testuser2 / password123")
+        isolation_user.set_password("password123")
+        isolation_user.is_active = True
+        isolation_user.save()
 
-        # Sample application data for user1
+        # Rich sample application data spanning all 5 statuses
         sample_jobs = [
-            ("Brain Station 23", "Frontend Developer", Application.StatusChoices.INTERVIEW, Application.JobTypeChoices.REMOTE, 45000, "Referred by Rafi."),
-            ("Optimizely", "Backend Engineer", Application.StatusChoices.APPLIED, Application.JobTypeChoices.HYBRID, 60000, "Applied via LinkedIn"),
-            ("Chaldal", "Full Stack Engineer", Application.StatusChoices.OFFER, Application.JobTypeChoices.ONSITE, 55000, "Got offer letter!"),
-            ("Pathao", "React Developer", Application.StatusChoices.REJECTED, Application.JobTypeChoices.REMOTE, 40000, "Resume screened out"),
-            ("Therapbd", "Software Engineer", Application.StatusChoices.WISHLIST, Application.JobTypeChoices.ONSITE, 50000, "Preparing CV"),
-            ("Kaz Software", "Django Developer", Application.StatusChoices.APPLIED, Application.JobTypeChoices.HYBRID, 48000, "Submitted application"),
-            ("Enosis Solutions", "Software Engineer I", Application.StatusChoices.INTERVIEW, Application.JobTypeChoices.ONSITE, 52000, "Technical interview on Tuesday"),
-            ("TigerIT", "Python Developer", Application.StatusChoices.WISHLIST, Application.JobTypeChoices.REMOTE, 55000, "Check position details"),
-            ("REVE Systems", "System Engineer", Application.StatusChoices.REJECTED, Application.JobTypeChoices.ONSITE, 38000, "Position closed"),
-            ("SSL Wireless", "Fullstack Developer", Application.StatusChoices.APPLIED, Application.JobTypeChoices.REMOTE, 47000, "Applied on company portal"),
-            ("Dynamic Solution Innovators", "Junior Software Engineer", Application.StatusChoices.OFFER, Application.JobTypeChoices.ONSITE, 42000, "Accepted offer"),
-            ("Vivasoft", "Frontend Engineer", Application.StatusChoices.INTERVIEW, Application.JobTypeChoices.HYBRID, 50000, "System Design round"),
+            ("Brain Station 23", "Senior Frontend Developer", Application.StatusChoices.INTERVIEW, Application.JobTypeChoices.REMOTE, 75000, "Referred by senior engineer. System design interview scheduled."),
+            ("Google", "Software Engineer - UI", Application.StatusChoices.APPLIED, Application.JobTypeChoices.HYBRID, 160000, "Applied directly via Google Careers portal."),
+            ("Optimizely", "Full Stack Engineer", Application.StatusChoices.INTERVIEW, Application.JobTypeChoices.REMOTE, 85000, "Passed technical coding round."),
+            ("Chaldal", "Lead Frontend Architect", Application.StatusChoices.OFFER, Application.JobTypeChoices.ONSITE, 95000, "Formal offer received with stock options."),
+            ("Meta", "React Frontend Engineer", Application.StatusChoices.APPLIED, Application.JobTypeChoices.REMOTE, 150000, "Submitted portfolio and resume via referral."),
+            ("Pathao", "Senior Frontend Engineer", Application.StatusChoices.REJECTED, Application.JobTypeChoices.ONSITE, 65000, "Position put on freeze for Q4."),
+            ("Netflix", "UI Platform Engineer", Application.StatusChoices.WISHLIST, Application.JobTypeChoices.REMOTE, 175000, "Customizing resume for upcoming role opening."),
+            ("Stripe", "Design Engineer", Application.StatusChoices.OFFER, Application.JobTypeChoices.REMOTE, 145000, "Offer received! Negotiating start date."),
+            ("Therap (BD) Ltd.", "Software Engineer II", Application.StatusChoices.WISHLIST, Application.JobTypeChoices.ONSITE, 70000, "Reviewing requirements and reach-out contacts."),
+            ("Kaz Software", "Django & React Specialist", Application.StatusChoices.APPLIED, Application.JobTypeChoices.HYBRID, 60000, "Submitted code samples and GitHub link."),
+            ("Enosis Solutions", "Senior Software Engineer", Application.StatusChoices.INTERVIEW, Application.JobTypeChoices.ONSITE, 72000, "Panel interview on Monday afternoon."),
+            ("Vercel", "Frontend Developer", Application.StatusChoices.WISHLIST, Application.JobTypeChoices.REMOTE, 130000, "Preparing open-source contributions for outreach."),
+            ("TigerIT", "Python & Django Engineer", Application.StatusChoices.APPLIED, Application.JobTypeChoices.ONSITE, 68000, "Applied via Bdjobs listing."),
+            ("REVE Systems", "System & Software Engineer", Application.StatusChoices.REJECTED, Application.JobTypeChoices.ONSITE, 50000, "Selected an internal candidate."),
+            ("SSL Wireless", "Full Stack Web Engineer", Application.StatusChoices.APPLIED, Application.JobTypeChoices.REMOTE, 62000, "Completed online technical assessment."),
+            ("Vivasoft", "React / Node.js Developer", Application.StatusChoices.INTERVIEW, Application.JobTypeChoices.HYBRID, 68000, "Passed HR screening, preparing for live coding.")
         ]
 
-        # Clear existing applications for user1 to prevent duplicates during re-seeding
-        Application.objects.filter(owner=user1).delete()
-
         today = date.today()
-        for idx, (company, pos, status, jtype, salary, notes) in enumerate(sample_jobs):
+
+        # Seed applications for 'demo'
+        Application.objects.filter(owner=demo_user).delete()
+        for idx, (company, pos, status_val, jtype, salary, notes) in enumerate(sample_jobs):
             app_date = today - timedelta(days=idx * 2)
             Application.objects.create(
-                owner=user1,
+                owner=demo_user,
                 company=company,
                 position=pos,
-                status=status,
+                status=status_val,
                 job_type=jtype,
                 applied_on=app_date,
                 expected_salary=salary,
-                job_link=f"https://{company.lower().replace(' ', '')}.com/careers/{idx+1}",
+                job_link=f"https://careers.{company.lower().replace(' ', '').replace('(', '').replace(')', '').replace('.', '')}.com",
                 notes=notes
             )
+        self.stdout.write(f"Seeded {len(sample_jobs)} applications for 'demo'.")
 
-        # Seed 1 application for user2 to test owner isolation
-        Application.objects.filter(owner=user2).delete()
+        # Seed applications for 'demouser'
+        Application.objects.filter(owner=demo_user2).delete()
+        for idx, (company, pos, status_val, jtype, salary, notes) in enumerate(sample_jobs):
+            app_date = today - timedelta(days=idx * 2)
+            Application.objects.create(
+                owner=demo_user2,
+                company=company,
+                position=pos,
+                status=status_val,
+                job_type=jtype,
+                applied_on=app_date,
+                expected_salary=salary,
+                job_link=f"https://careers.{company.lower().replace(' ', '').replace('(', '').replace(')', '').replace('.', '')}.com",
+                notes=notes
+            )
+        self.stdout.write(f"Seeded {len(sample_jobs)} applications for 'demouser'.")
+
+        # Seed 1 isolated application for testuser2
+        Application.objects.filter(owner=isolation_user).delete()
         Application.objects.create(
-            owner=user2,
-            company="Secret Corp",
-            position="Private Specialist",
+            owner=isolation_user,
+            company="Confidential Aerospace",
+            position="Cybersecurity Analyst",
             status=Application.StatusChoices.WISHLIST,
             job_type=Application.JobTypeChoices.REMOTE,
-            notes="Belongs strictly to testuser2"
+            expected_salary=90000,
+            notes="Confidential test application belonging only to testuser2."
         )
 
-        self.stdout.write(self.style.SUCCESS("Successfully seeded demo data!"))
+        self.stdout.write(self.style.SUCCESS("All demo admin and client data seeded successfully!"))

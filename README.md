@@ -21,6 +21,18 @@
 
 ---
 
+## 🔐 Demo Accounts & Credentials for Testing
+
+| Portal | Role | Username | Password | Notes |
+| :--- | :--- | :--- | :--- | :--- |
+| **Django Admin Panel** (`/admin/`) | Superuser / Staff | `admin` | `admin123` | Full access to manage users and applications in Django admin |
+| **Django Admin (Alias)** | Superuser / Staff | `Admin` | `admin123` | Backup superuser |
+| **JobTrail Client Portal** (`/login`) | Job Seeker | `demo` | `demo123` | Pre-seeded with 16 realistic applications across all statuses |
+| **JobTrail Client (Secondary)** | Job Seeker | `demouser` | `password123` | Pre-seeded with 16 realistic applications |
+| **Owner Isolation Test User** | Private User | `testuser2` | `password123` | Used to verify that User B gets 404 for User A records |
+
+---
+
 ## 🚀 Setup & Local Execution
 
 1. **Navigate to backend directory**:
@@ -47,12 +59,13 @@
    ```
 
 5. **Run Migrations**:
+   Automatically seeds the `admin` superuser and `demo` user accounts:
    ```bash
    python manage.py migrate
    ```
 
 6. **Seed Demo Data & Admin Superuser**:
-   Populates test users (`demouser` / `password123`, `Admin` / `admin`, and `testuser2` / `password123`) and sample job applications:
+   Populates `admin` / `admin123`, `demo` / `demo123`, and 16 diverse job applications:
    ```bash
    python manage.py seed_demo
    ```
