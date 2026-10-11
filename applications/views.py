@@ -1,3 +1,5 @@
+import zoneinfo
+from django.utils import timezone
 from rest_framework import viewsets, generics, permissions, status, filters
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -27,7 +29,17 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         return Application.objects.filter(owner=self.request.user)
 
     def perform_create(self, serializer):
-        serializer.save(owner=self.request.user)
+        applied_on = serializer.validated_data.get("applied_on")
+        if not applied_on:
+            tz_header = self.request.headers.get("X-Timezone", "Asia/Dhaka")
+            try:
+                user_tz = zoneinfo.ZoneInfo(tz_header)
+            except Exception:
+                user_tz = zoneinfo.ZoneInfo("Asia/Dhaka")
+            local_today = timezone.now().astimezone(user_tz).date()
+            serializer.save(owner=self.request.user, applied_on=local_today)
+        else:
+            serializer.save(owner=self.request.user)
 
 class StatsView(APIView):
     permission_classes = [permissions.IsAuthenticated]

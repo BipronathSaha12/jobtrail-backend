@@ -104,3 +104,49 @@ class JobTrailBackendTests(APITestCase):
         """Test request without token returns 401 Unauthorized"""
         response = self.client.get("/api/applications/")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_status_change_persistence(self):
+        """Test moving application from APPLIED to INTERVIEW sticks in DB across requests"""
+        self.client.force_authenticate(user=self.user_a)
+        # Initially app_a2 is APPLIED
+        self.assertEqual(self.app_a2.status, Application.StatusChoices.APPLIED)
+
+        # PATCH status to INTERVIEW
+        patch_response = self.client.patch(
+            f"/api/applications/{self.app_a2.id}/",
+            {"status": "INTERVIEW"},
+            format="json"
+        )
+        self.assertEqual(patch_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(patch_response.data["status"], "INTERVIEW")
+
+        # GET request simulates page refresh - verify the status change stuck!
+        get_response = self.client.get(f"/api/applications/{self.app_a2.id}/")
+        self.assertEqual(get_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(get_response.data["status"], "INTERVIEW")
+
+        # Reload from DB directly
+        self.app_a2.refresh_from_db()
+        self.assertEqual(self.app_a2.status, Application.StatusChoices.INTERVIEW)
+
+    def test_timezone_aware_application_date(self):
+        """Test application creation respects X-Timezone header for local calendar date"""
+        import zoneinfo
+        from django.utils import timezone
+        self.client.force_authenticate(user=self.user_a)
+
+        response = self.client.post(
+            "/api/applications/",
+            {
+                "company": "Dhaka Tech Ltd",
+                "position": "Senior Full-Stack Engineer",
+                "status": "APPLIED"
+            },
+            HTTP_X_TIMEZONE="Asia/Dhaka",
+            format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        
+        expected_dhaka_date = timezone.now().astimezone(zoneinfo.ZoneInfo("Asia/Dhaka")).date()
+        self.assertEqual(response.data["applied_on"], expected_dhaka_date.isoformat())
+
