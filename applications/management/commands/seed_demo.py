@@ -64,61 +64,127 @@ class Command(BaseCommand):
         isolation_user.is_active = True
         isolation_user.save()
 
-        # Rich sample application data spanning all 5 statuses
-        sample_jobs = [
-            ("Brain Station 23", "Senior Frontend Developer", Application.StatusChoices.INTERVIEW, Application.JobTypeChoices.REMOTE, 75000, "Referred by senior engineer. System design interview scheduled."),
-            ("Google", "Software Engineer - UI", Application.StatusChoices.APPLIED, Application.JobTypeChoices.HYBRID, 160000, "Applied directly via Google Careers portal."),
-            ("Optimizely", "Full Stack Engineer", Application.StatusChoices.INTERVIEW, Application.JobTypeChoices.REMOTE, 85000, "Passed technical coding round."),
-            ("Chaldal", "Lead Frontend Architect", Application.StatusChoices.OFFER, Application.JobTypeChoices.ONSITE, 95000, "Formal offer received with stock options."),
-            ("Meta", "React Frontend Engineer", Application.StatusChoices.APPLIED, Application.JobTypeChoices.REMOTE, 150000, "Submitted portfolio and resume via referral."),
-            ("Pathao", "Senior Frontend Engineer", Application.StatusChoices.REJECTED, Application.JobTypeChoices.ONSITE, 65000, "Position put on freeze for Q4."),
-            ("Netflix", "UI Platform Engineer", Application.StatusChoices.WISHLIST, Application.JobTypeChoices.REMOTE, 175000, "Customizing resume for upcoming role opening."),
-            ("Stripe", "Design Engineer", Application.StatusChoices.OFFER, Application.JobTypeChoices.REMOTE, 145000, "Offer received! Negotiating start date."),
-            ("Therap (BD) Ltd.", "Software Engineer II", Application.StatusChoices.WISHLIST, Application.JobTypeChoices.ONSITE, 70000, "Reviewing requirements and reach-out contacts."),
-            ("Kaz Software", "Django & React Specialist", Application.StatusChoices.APPLIED, Application.JobTypeChoices.HYBRID, 60000, "Submitted code samples and GitHub link."),
-            ("Enosis Solutions", "Senior Software Engineer", Application.StatusChoices.INTERVIEW, Application.JobTypeChoices.ONSITE, 72000, "Panel interview on Monday afternoon."),
-            ("Vercel", "Frontend Developer", Application.StatusChoices.WISHLIST, Application.JobTypeChoices.REMOTE, 130000, "Preparing open-source contributions for outreach."),
-            ("TigerIT", "Python & Django Engineer", Application.StatusChoices.APPLIED, Application.JobTypeChoices.ONSITE, 68000, "Applied via Bdjobs listing."),
-            ("REVE Systems", "System & Software Engineer", Application.StatusChoices.REJECTED, Application.JobTypeChoices.ONSITE, 50000, "Selected an internal candidate."),
-            ("SSL Wireless", "Full Stack Web Engineer", Application.StatusChoices.APPLIED, Application.JobTypeChoices.REMOTE, 62000, "Completed online technical assessment."),
-            ("Vivasoft", "React / Node.js Developer", Application.StatusChoices.INTERVIEW, Application.JobTypeChoices.HYBRID, 68000, "Passed HR screening, preparing for live coding.")
+        COMPANIES = [
+            "Google", "Microsoft", "Amazon", "Meta", "Apple", "Netflix", "Spotify", "Stripe", "Vercel",
+            "Airbnb", "Uber", "Shopify", "GitHub", "GitLab", "Datadog", "Cloudflare", "Atlassian",
+            "Figma", "Notion", "Slack", "Canva", "Twilio", "Salesforce", "Adobe", "LinkedIn", "Twitter/X",
+            "Oracle", "IBM", "Cisco", "Intel", "AMD", "NVIDIA", "Palantir", "Dropbox", "Square / Block",
+            "Coinbase", "Reddit", "Pinterest", "Snap Inc", "Zoom", "DoorDash", "Instacart", "Robinhood",
+            "Brain Station 23", "Optimizely", "Chaldal", "Pathao", "Therap (BD) Ltd.", "Kaz Software",
+            "Enosis Solutions", "TigerIT", "REVE Systems", "SSL Wireless", "Vivasoft", "Dynamic Solution Innovators",
+            "BJIT Limited", "Augmedix BD", "Cefalo Bangladesh", "Kazi IT Center", "Orbitax BD", "LeadSoft",
+            "DataSoft Systems", "Inovace Technologies", "Shuttle Technologies", "bKash Limited", "Nagad",
+            "Kite Games Studio", "Battery Low Interactive", "Appscode", "NewsCred", "Monstarlab BD"
         ]
 
+        POSITIONS = [
+            "Frontend Developer", "Senior Frontend Engineer", "Lead React Architect", "UI/UX Engineer",
+            "Backend Engineer", "Senior Backend Developer", "Django / Python Specialist", "Full Stack Developer",
+            "Senior Full Stack Engineer", "Staff Software Engineer", "DevOps Engineer", "Site Reliability Engineer (SRE)",
+            "Cloud Infrastructure Engineer", "Mobile App Developer (React Native)", "iOS Developer (Swift)",
+            "Android Engineer (Kotlin)", "Data Engineer", "Machine Learning Engineer", "AI Solutions Engineer",
+            "QA Automation Engineer", "Senior QA Specialist", "Security Engineer", "Application Security Specialist",
+            "Solutions Architect", "Technical Lead", "Product Engineer", "API Platform Engineer", "Systems Software Engineer",
+            "Junior Software Engineer", "Associate Software Engineer", "Software Engineer II"
+        ]
+
+        NOTES_BY_STATUS = {
+            "WISHLIST": [
+                "Found this vacancy on LinkedIn. Reviewing company culture and preparing tailored CV.",
+                "High-priority company. Connecting with team members on LinkedIn for potential referral.",
+                "Job description matches my tech stack perfectly (React, TypeScript, Django).",
+                "Recommended by peer. Checking Glassdoor reviews and salary benchmarks.",
+                "Bookmark for next hiring sprint. Tailoring cover letter emphasizing frontend architecture.",
+                "Position opens next week. Following up with recruiter."
+            ],
+            "APPLIED": [
+                "Applied via official career portal with custom portfolio link.",
+                "Application submitted through internal employee referral.",
+                "Submitted CV and cover letter on Bdjobs / LinkedIn. Confirmation email received.",
+                "Applied with customized resume emphasizing full-stack delivery and system design.",
+                "Completed candidate questionnaire and submitted GitHub open-source repositories.",
+                "Waiting for recruiter screening response."
+            ],
+            "INTERVIEW": [
+                "Passed recruiter call. First technical interview scheduled for Thursday 3:00 PM.",
+                "Completed live coding assessment (Data structures & algorithmic problem solving).",
+                "System architecture & design interview scheduled with Principal Engineer.",
+                "HR and cultural fit interview completed. Awaiting final round schedule.",
+                "Take-home coding project submitted. Code review interview booked next week.",
+                "Panel interview with Engineering Director and Product Manager completed."
+            ],
+            "OFFER": [
+                "Formal offer letter received! Base salary + performance bonus + stock options.",
+                "Offer details: competitive compensation, health insurance, remote work stipend.",
+                "Accepted verbal offer! Negotiating start date and signing paperwork.",
+                "Offer received with excellent benefits and learning allowance. Deciding by Friday.",
+                "Competitive offer in hand. Reviewing contract terms with mentors."
+            ],
+            "REJECTED": [
+                "Position put on hold due to team restructuring.",
+                "Role filled internally by existing team member.",
+                "Received constructive feedback: strengthen distributed systems experience.",
+                "Selected another candidate with more domain-specific background.",
+                "Polite rejection received. Invited to re-apply for senior opening next quarter."
+            ]
+        }
+
         today = date.today()
+        random.seed(42)
+        job_types = ["REMOTE", "HYBRID", "ONSITE"]
 
-        # Seed applications for 'demo'
-        Application.objects.filter(owner=demo_user).delete()
-        for idx, (company, pos, status_val, jtype, salary, notes) in enumerate(sample_jobs):
-            app_date = today - timedelta(days=idx * 2)
-            Application.objects.create(
-                owner=demo_user,
-                company=company,
-                position=pos,
-                status=status_val,
-                job_type=jtype,
-                applied_on=app_date,
-                expected_salary=salary,
-                job_link=f"https://careers.{company.lower().replace(' ', '').replace('(', '').replace(')', '').replace('.', '')}.com",
-                notes=notes
-            )
-        self.stdout.write(f"Seeded {len(sample_jobs)} applications for 'demo'.")
+        # Helper to generate 215 applications for a user
+        def generate_user_apps(target_user):
+            Application.objects.filter(owner=target_user).delete()
+            apps_list = []
+            for i in range(215):
+                company = COMPANIES[i % len(COMPANIES)]
+                position = POSITIONS[(i * 3 + i // len(COMPANIES)) % len(POSITIONS)]
+                
+                # Realistic status distribution
+                if i < 60:
+                    status = "WISHLIST"
+                elif i < 125:
+                    status = "APPLIED"
+                elif i < 170:
+                    status = "INTERVIEW"
+                elif i < 192:
+                    status = "OFFER"
+                else:
+                    status = "REJECTED"
 
-        # Seed applications for 'demouser'
-        Application.objects.filter(owner=demo_user2).delete()
-        for idx, (company, pos, status_val, jtype, salary, notes) in enumerate(sample_jobs):
-            app_date = today - timedelta(days=idx * 2)
-            Application.objects.create(
-                owner=demo_user2,
-                company=company,
-                position=pos,
-                status=status_val,
-                job_type=jtype,
-                applied_on=app_date,
-                expected_salary=salary,
-                job_link=f"https://careers.{company.lower().replace(' ', '').replace('(', '').replace(')', '').replace('.', '')}.com",
-                notes=notes
-            )
-        self.stdout.write(f"Seeded {len(sample_jobs)} applications for 'demouser'.")
+                job_type = job_types[(i + (i % 2)) % len(job_types)]
+                days_ago = (i * 2) % 120
+                app_date = today - timedelta(days=days_ago)
+
+                salary_base = 50000 + ((i * 3700) % 110000)
+                salary = (salary_base // 5000) * 5000
+
+                slug = company.lower().replace(" ", "").replace("/", "").replace("(", "").replace(")", "").replace(".", "")
+                job_link = f"https://careers.{slug}.com/jobs/{1000 + i}"
+                notes_pool = NOTES_BY_STATUS[status]
+                note = notes_pool[i % len(notes_pool)]
+
+                apps_list.append(
+                    Application(
+                        owner=target_user,
+                        company=company,
+                        position=position,
+                        status=status,
+                        job_type=job_type,
+                        applied_on=app_date,
+                        expected_salary=salary,
+                        job_link=job_link,
+                        notes=note
+                    )
+                )
+            Application.objects.bulk_create(apps_list)
+
+        generate_user_apps(demo_user)
+        self.stdout.write(f"Seeded 215 applications for 'demo'.")
+
+        generate_user_apps(demo_user2)
+        self.stdout.write(f"Seeded 215 applications for 'demouser'.")
 
         # Seed 1 isolated application for testuser2
         Application.objects.filter(owner=isolation_user).delete()
@@ -132,4 +198,4 @@ class Command(BaseCommand):
             notes="Confidential test application belonging only to testuser2."
         )
 
-        self.stdout.write(self.style.SUCCESS("All demo admin and client data seeded successfully!"))
+        self.stdout.write(self.style.SUCCESS("All demo admin and client data (215+ jobs) seeded successfully!"))
