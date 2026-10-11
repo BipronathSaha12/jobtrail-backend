@@ -1,10 +1,13 @@
+import csv
 import zoneinfo
 from django.utils import timezone
+from django.http import HttpResponse
 from rest_framework import viewsets, generics, permissions, status, filters
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
 from rest_framework_simplejwt.views import TokenObtainPairView
-from django.db.models import Count
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Application
 from .serializers import ApplicationSerializer, RegisterSerializer, CustomTokenObtainPairSerializer
@@ -16,9 +19,15 @@ class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]
 
+class ApplicationPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 500
+
 class ApplicationViewSet(viewsets.ModelViewSet):
     serializer_class = ApplicationSerializer
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = ApplicationPagination
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ["status", "job_type"]
     search_fields = ["company", "position"]
@@ -41,20 +50,76 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         else:
             serializer.save(owner=self.request.user)
 
+    @action(detail=False, methods=['get'])
+    def export(self, request):
+        queryset = self.filter_queryset(self.get_queryset())
+        response = HttpResponse(content_type="text/csv; charset=utf-8")
+        response["Content-Disposition"] = 'attachment; filename="jobtrail_applications.csv"'
+        
+        # Include UTF-8 BOM so Excel opens non-ASCII characters seamlessly
+        response.write('\ufeff')
+        
+        writer = csv.writer(response)
+        writer.writerow([
+            "ID", "Company", "Position", "Status", "Job Type", "Location",
+            "Expected Salary", "Applied On", "Job URL", "Notes", "Created At"
+        ])
+        for app in queryset:
+            writer.writerow([
+                app.id,
+                app.company,
+                app.position,
+                app.status,
+                app.job_type,
+                app.location or "",
+                app.expected_salary or "",
+                app.applied_on or "",
+                app.job_url or "",
+                app.notes or "",
+                app.created_at.strftime("%Y-%m-%d %H:%M:%S") if app.created_at else "",
+            ])
+        return response
+
 class StatsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        rows = (
-            Application.objects.filter(owner=request.user)
-            .values("status")
-            .annotate(n=Count("id"))
+        apps = Application.objects.filter(owner=request.user).values(
+            "id", "status", "applied_on", "created_at"
         )
-        data = {row["status"].lower(): row["n"] for row in rows}
-        
-        # Ensure every key is present even if count is 0
-        for key in ["wishlist", "applied", "interview", "offer", "rejected"]:
-            data.setdefault(key, 0)
-            
-        data["total"] = sum(data.values())
-        return Response(data, status=status.HTTP_200_OK)
+
+        status_counts = {"wishlist": 0, "applied": 0, "interview": 0, "offer": 0, "rejected": 0}
+        monthly_map = {}
+
+        for app in apps:
+            st = (app["status"] or "WISHLIST").lower()
+            status_counts[st] = status_counts.get(st, 0) + 1
+
+            # Determine date: prefer applied_on, fallback to created_at
+            d = app["applied_on"] or (app["created_at"].date() if app["created_at"] else None)
+            if d:
+                key = d.strftime("%Y-%m")
+                label = d.strftime("%b %Y")
+                if key not in monthly_map:
+                    monthly_map[key] = {
+                        "key": key,
+                        "month": label,
+                        "total": 0,
+                        "wishlist": 0,
+                        "applied": 0,
+                        "interview": 0,
+                        "offer": 0,
+                        "rejected": 0,
+                    }
+                monthly_map[key]["total"] += 1
+                if st in monthly_map[key]:
+                    monthly_map[key][st] += 1
+
+        status_counts["total"] = len(apps)
+        sorted_trends = [monthly_map[k] for k in sorted(monthly_map.keys())]
+
+        return Response({
+            **status_counts,
+            "monthly_trends": sorted_trends,
+        }, status=status.HTTP_200_OK)
+
