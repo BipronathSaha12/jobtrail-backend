@@ -1,7 +1,9 @@
+import io
 import csv
 import zoneinfo
 from django.utils import timezone
 from django.http import HttpResponse
+from django.db.models import Q
 from rest_framework import viewsets, generics, permissions, status, filters
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -52,17 +54,25 @@ class ApplicationViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def export(self, request):
-        queryset = self.filter_queryset(self.get_queryset())
-        response = HttpResponse(content_type="text/csv; charset=utf-8")
-        response["Content-Disposition"] = 'attachment; filename="jobtrail_applications.csv"'
-        
-        # Include UTF-8 BOM so Excel opens non-ASCII characters seamlessly
-        response.write('\ufeff')
-        
-        writer = csv.writer(response)
+        queryset = self.get_queryset()
+        status_filter = request.GET.get("status")
+        job_type_filter = request.GET.get("job_type")
+        search = request.GET.get("search")
+
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+        if job_type_filter:
+            queryset = queryset.filter(job_type=job_type_filter)
+        if search:
+            queryset = queryset.filter(
+                Q(company__icontains=search) | Q(position__icontains=search)
+            )
+
+        output = io.StringIO()
+        writer = csv.writer(output)
         writer.writerow([
-            "ID", "Company", "Position", "Status", "Job Type", "Location",
-            "Expected Salary", "Applied On", "Job URL", "Notes", "Created At"
+            "ID", "Company", "Position", "Status", "Job Type",
+            "Expected Salary", "Applied On", "Job Link", "Notes", "Created At"
         ])
         for app in queryset:
             writer.writerow([
@@ -71,13 +81,16 @@ class ApplicationViewSet(viewsets.ModelViewSet):
                 app.position,
                 app.status,
                 app.job_type,
-                app.location or "",
                 app.expected_salary or "",
                 app.applied_on or "",
-                app.job_url or "",
+                app.job_link or "",
                 app.notes or "",
                 app.created_at.strftime("%Y-%m-%d %H:%M:%S") if app.created_at else "",
             ])
+
+        csv_data = "\ufeff" + output.getvalue()
+        response = HttpResponse(csv_data, content_type="text/csv; charset=utf-8")
+        response["Content-Disposition"] = 'attachment; filename="jobtrail_applications.csv"'
         return response
 
 class StatsView(APIView):
